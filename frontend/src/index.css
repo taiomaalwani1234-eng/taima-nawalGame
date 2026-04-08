@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-family: 'Cairo', sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  min-height: 100vh;
+}
+
+.sector-green {
+  filter: drop-shadow(0 0 10px #22c55e);
+}
+
+.sector-yellow {
+  filter: drop-shadow(0 0 10px #eab308);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.sector-red {
+  filter: drop-shadow(0 0 15px #ef4444);
+  animation: pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.terminal-text {
+  font-family: 'Courier New', monospace;
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
