@@ -7,6 +7,7 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 
 export function GameProvider({ children }) {
   const socketRef = useRef(null);
+  const timerRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const [gameState, setGameState] = useState({
     status: 'lobby',
@@ -15,10 +16,16 @@ export function GameProvider({ children }) {
     credits: 10000,
     infrastructure: null,
     timeRemaining: 600,
+    localTime: 600,
     logs: [],
     isOnCooldown: false,
     cooldownRemaining: 0,
-    gameReport: null
+    gameReport: null,
+    resources: {
+      cpu: { current: 100, max: 100 },
+      bandwidth: { current: 100, max: 100 },
+      budget: { current: 10000, max: 10000 }
+    }
   });
 
   useEffect(() => {
@@ -54,7 +61,8 @@ export function GameProvider({ children }) {
         roomId: data.roomId,
         role: data.role,
         credits: data.credits,
-        infrastructure: data.infrastructure
+        infrastructure: data.infrastructure,
+        resources: data.resources || prev.resources
       }));
     });
 
@@ -63,8 +71,21 @@ export function GameProvider({ children }) {
         ...prev,
         status: 'playing',
         infrastructure: data.infrastructure,
-        timeRemaining: data.timeRemaining
+        timeRemaining: data.timeRemaining,
+        localTime: data.timeRemaining,
+        resources: data.resources || prev.resources
       }));
+
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setGameState(prev => {
+          if (prev.localTime <= 0) {
+            clearInterval(timerRef.current);
+            return prev;
+          }
+          return { ...prev, localTime: prev.localTime - 1 };
+        });
+      }, 1000);
     });
 
     newSocket.on('attack-executed', (data) => {
@@ -72,7 +93,7 @@ export function GameProvider({ children }) {
         ...prev,
         infrastructure: {
           ...prev.infrastructure,
-          [data.targetSector]: data.sectorStatus
+          [data.targetId]: data.sectorStatus
         },
         isOnCooldown: true,
         cooldownRemaining: data.cooldown
@@ -82,11 +103,12 @@ export function GameProvider({ children }) {
     newSocket.on('defense-deployed', (data) => {
       setGameState(prev => ({
         ...prev,
-        credits: data.credits,
+        credits: data.resources?.budget?.current ?? prev.credits,
         infrastructure: {
           ...prev.infrastructure,
-          [data.targetSector]: data.sectorStatus
-        }
+          [data.targetId]: data.sectorStatus
+        },
+        resources: data.resources || prev.resources
       }));
     });
 
@@ -111,7 +133,16 @@ export function GameProvider({ children }) {
     newSocket.on('timer-update', (data) => {
       setGameState(prev => ({
         ...prev,
-        timeRemaining: data.timeRemaining
+        timeRemaining: data.timeRemaining,
+        localTime: data.timeRemaining
+      }));
+    });
+
+    newSocket.on('resource-update', (data) => {
+      setGameState(prev => ({
+        ...prev,
+        resources: data.resources || prev.resources,
+        credits: data.resources?.budget?.current ?? prev.credits
       }));
     });
 
@@ -123,6 +154,10 @@ export function GameProvider({ children }) {
     });
 
     newSocket.on('game-end', (data) => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
       setGameState(prev => ({
         ...prev,
         status: 'finished',
@@ -135,6 +170,10 @@ export function GameProvider({ children }) {
     });
 
     newSocket.on('player-disconnected', (data) => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
       setGameState(prev => ({
         ...prev,
         status: 'lobby',
@@ -142,13 +181,15 @@ export function GameProvider({ children }) {
       }));
     });
 
-    return () => newSocket.close();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      newSocket.close();
+    };
   }, []);
 
   const hostGame = useCallback((role) => {
     const s = socketRef.current;
     if (s && s.connected) {
-      console.log('إرسال حدث host-game:', role);
       s.emit('host-game', { role });
     } else {
       console.error('السوكت غير متصل');
@@ -162,17 +203,17 @@ export function GameProvider({ children }) {
     }
   }, []);
 
-  const launchAttack = useCallback((attackType, targetSector) => {
+  const launchAttack = useCallback((attackType, targetId) => {
     const s = socketRef.current;
     if (s) {
-      s.emit('launch-attack', { attackType, targetSector });
+      s.emit('launch-attack', { attackType, targetId });
     }
   }, []);
 
-  const deployDefense = useCallback((defenseType, targetSector) => {
+  const deployDefense = useCallback((defenseType, targetId) => {
     const s = socketRef.current;
     if (s) {
-      s.emit('deploy-defense', { defenseType, targetSector });
+      s.emit('deploy-defense', { defenseType, targetId });
     }
   }, []);
 
