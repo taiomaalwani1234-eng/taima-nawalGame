@@ -2,15 +2,11 @@ import React from 'react';
 import { useGame } from '../context/GameContext';
 
 export default function Lobby() {
-  const { gameState, hostGame, joinGame } = useGame();
+  const { gameState, hostGame, joinGame, connected } = useGame();
   const [selectedRole, setSelectedRole] = React.useState('defender');
   const [joinRoomId, setJoinRoomId] = React.useState('');
 
   const handleHost = () => {
-    if (!socket) {
-      console.error('السوكت غير متصل');
-      return;
-    }
     console.log('محاولة استضافة لعبة بدور:', selectedRole);
     hostGame(selectedRole);
   };
@@ -33,6 +29,11 @@ export default function Lobby() {
 
         {gameState.status === 'lobby' && (
           <>
+            {!connected && (
+              <div className="bg-red-900/50 border border-red-500 rounded-lg p-3 mb-6 text-center text-red-300">
+                ⚠️ غير متصل بالخادم — تأكد أن الباك-اند يعمل
+              </div>
+            )}
             <div className="mb-6">
               <label className="text-white mb-2 block">اختر دورك:</label>
               <div className="flex gap-4">

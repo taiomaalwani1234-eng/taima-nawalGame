@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 
 const GameContext = createContext(null);
@@ -6,7 +6,8 @@ const GameContext = createContext(null);
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 
 export function GameProvider({ children }) {
-  const [socket, setSocket] = useState(null);
+  const socketRef = useRef(null);
+  const [connected, setConnected] = useState(false);
   const [gameState, setGameState] = useState({
     status: 'lobby',
     roomId: null,
@@ -25,9 +26,11 @@ export function GameProvider({ children }) {
       transports: ['websocket', 'polling']
     });
 
+    socketRef.current = newSocket;
+
     newSocket.on('connect', () => {
       console.log('متصل بالخادم');
-      setSocket(newSocket);
+      setConnected(true);
     });
 
     newSocket.on('connect_error', (error) => {
@@ -143,34 +146,39 @@ export function GameProvider({ children }) {
   }, []);
 
   const hostGame = useCallback((role) => {
-    if (socket && socket.connected) {
+    const s = socketRef.current;
+    if (s && s.connected) {
       console.log('إرسال حدث host-game:', role);
-      socket.emit('host-game', { role });
+      s.emit('host-game', { role });
     } else {
       console.error('السوكت غير متصل');
     }
-  }, [socket]);
+  }, []);
 
   const joinGame = useCallback((roomId) => {
-    if (socket) {
-      socket.emit('join-game', { roomId });
+    const s = socketRef.current;
+    if (s) {
+      s.emit('join-game', { roomId });
     }
-  }, [socket]);
+  }, []);
 
   const launchAttack = useCallback((attackType, targetSector) => {
-    if (socket) {
-      socket.emit('launch-attack', { attackType, targetSector });
+    const s = socketRef.current;
+    if (s) {
+      s.emit('launch-attack', { attackType, targetSector });
     }
-  }, [socket]);
+  }, []);
 
   const deployDefense = useCallback((defenseType, targetSector) => {
-    if (socket) {
-      socket.emit('deploy-defense', { defenseType, targetSector });
+    const s = socketRef.current;
+    if (s) {
+      s.emit('deploy-defense', { defenseType, targetSector });
     }
-  }, [socket]);
+  }, []);
 
   const value = {
     gameState,
+    connected,
     hostGame,
     joinGame,
     launchAttack,
