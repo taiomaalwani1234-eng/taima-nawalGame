@@ -1,0 +1,123 @@
+دائما اكتب UserReport.md 
+ودائما اضف عليه اضافة لا تقم بحذفه
+وكل الاسئلة والواجهات بالعربية
+
+
+Act as an Expert Full-Stack Developer and Game Architect. Your task is to build the complete architecture and MVP code for a real-time web-based simulation game called "SecureCity: Smart Infrastructure Cyber Defense Simulation Platform". 
+
+Below is the complete System Requirement Document (SRD). Read it carefully, process all instructions, database schemas, and UI layouts, and start building the application step-by-step.
+
+---
+
+### 1. PROJECT OVERVIEW
+- **Concept:** A 1v1 real-time Serious Game (Defender/Government vs. Attacker/Hacker) simulating cyber attacks on a Smart City's infrastructure.
+- **Connection:** Client-Server architecture. The primary machine acts as a Host (creates a Room and displays its IP/Code). Players connect via WebSockets (Socket.io) using this IP.
+- **Tech Stack Expected:** 
+  - Frontend: React.js (or Next.js) + TailwindCSS.
+  - Backend: Node.js + Express + Socket.io (for real-time events).
+  - Database: MongoDB or PostgreSQL (for logging game events and generating end-game reports).
+
+---
+
+### 2. GAME MECHANICS & RULES
+
+#### A. The Defender (Government/CISO)
+- **Resources:** Operates on "Financial Credits" (Budget).
+- **Starting State:** Has a fixed starting budget (e.g., 10,000 Credits).
+- **Earning:** Successfully blocking an attack increases the budget (reward).
+- **Spending:** Using defense mechanisms costs credits (e.g., Deploy Firewall = -500, Server Reboot = -1000, Isolate Network = -1500).
+- **Goal:** Keep all city sectors green and avoid bankruptcy or total infrastructure collapse.
+
+#### B. The Attacker (Hacker)
+- **Resources:** Operates on "Time & Cooldowns" (No financial budget).
+- **Rules:**
+  1. **Rate Limit:** Maximum 2 attacks per second.
+  2. **Concurrency Rule:** Cannot execute two *different* attack types in the exact same second.
+  3. **Casting Time:** Complex attacks (e.g., Advanced Persistent Threat - APT) take exactly 10 seconds to cast/prepare before hitting the target.
+  4. **Global Cooldown (Freeze):** Every attack freezes the hacker from launching subsequent attacks. 
+     - e.g., DDoS Attack -> Freezes hacker for 3 seconds.
+     - e.g., Ransomware -> Freezes hacker for 5 seconds.
+- **Goal:** Crash the city sectors (turn them Red) before the time runs out.
+
+#### C. The City Infrastructure (The Map)
+- The city consists of 5 main Interactive Sectors:
+  1. Hospital (Health Sector)
+  2. Power Grid (Energy Sector)
+  3. Communications (Telecom)
+  4. Water Plant (Utilities)
+  5. Traffic Lights (Transportation) - *Highly volatile, changes frequently.*
+- **Status Colors:**
+  - 🟢 GREEN: Safe (100% functionality).
+  - 🟡 YELLOW: Under Attack (Warning state, Defender must react).
+  - 🔴 RED: Compromised/Down (Requires massive credits/time to restore).
+
+---
+
+### 3. DATABASE SCHEMA & STATE MANAGEMENT
+
+Create the following models (or real-time state objects):
+
+**1. GameRoom Model:**
+- `roomId` (String)
+- `hostIp` (String)
+- `status` (Enum: 'waiting', 'playing', 'finished')
+- `timeRemaining` (Integer - seconds)
+
+**2. Player Model:**
+- `role` (Enum: 'defender', 'attacker')
+- `credits` (Integer - Defender only)
+- `isOnCooldown` (Boolean - Attacker only)
+- `cooldownEndsAt` (Timestamp - Attacker only)
+
+**3. Infrastructure Model (The Map State):**
+- `sectorName` (String: Hospital, Power, Comms, Water, Traffic)
+- `status` (Enum: 'green', 'yellow', 'red')
+- `healthPercentage` (Integer: 0-100)
+
+**4. ActionLog Model (Crucial for the Final Report):**
+- `timestamp` (DateTime)
+- `actor` ('defender' or 'attacker')
+- `actionType` (e.g., 'ddos_launched', 'firewall_deployed')
+- `targetSector` (String)
+- `outcome` ('success', 'blocked', 'failed')
+
+---
+
+### 4. UI/UX LAYOUTS (Wireframe Instructions)
+
+#### Screen 1: Lobby / Connection Screen
+- Central box: "Host Game" (generates Room IP) OR "Join Game" (input IP).
+- Role Selection: Buttons to choose "Play as Defender" or "Play as Hacker".
+
+#### Screen 2: Defender Dashboard (Government UI)
+- **Theme:** Clean, modern, high-tech command center (Blue/White/Silver).
+- **Center:** An interactive SVG Map of the city divided into 5 distinct visual zones (Hospital, Power, Comms, Water, Traffic Lights). The zones glow Green, Yellow, or Red dynamically.
+- **Top Bar:** Live display of "Available Credits: $XXX,XXX".
+- **Bottom Panel (Defense Arsenal):** Buttons for defenses (Firewall, Patch, Reboot, Isolate) with their Credit Cost clearly visible.
+- **Right Sidebar:** Live Security Logs (e.g., "⚠️ Warning: Unusual traffic detected in Traffic Lights sector").
+
+#### Screen 3: Attacker Dashboard (Hacker UI)
+- **Theme:** Dark mode, terminal-style, cyberpunk vibes (Black/Neon Green/Red).
+- **Left Panel (Targets):** List of the 5 city sectors with their estimated health.
+- **Center Panel (Attack Arsenal):** 
+  - Grid of attack buttons (DDoS, Ransomware, Phishing, APT).
+  - Each button must show its "Cast Time" and "Cooldown Time".
+  - When an attack is launched, an overlaid Progress Bar / Timer disables the UI until the cooldown finishes.
+- **Right Sidebar:** Terminal window showing live execution logs (e.g., "Executing DDoS... Target: Power Grid... Status: Bypass successful").
+
+#### Screen 4: Post-Game Report (Analytics)
+- A screen showing the final results.
+- **Stats:** MTTD (Mean Time To Detect), MTTR (Mean Time To Respond).
+- Line charts showing the Hacker's attack frequency vs. Defender's credit usage.
+
+---
+
+### 5. YOUR TASK / ACTION PLAN
+Please execute this project in the following order:
+1. Initialize the project (Frontend + Backend).
+2. Set up the WebSocket Server and the Room/Lobby connection logic.
+3. Build the core Game Engine logic (handling Credits, Cooldowns, 2-attacks/sec rate limit, and casting times).
+4. Build the UI components based on the layouts above (especially the SVG Map and Sector states).
+5. Integrate the backend with the frontend.
+
+Start by giving me a brief confirmation of your understanding, and then immediately output the code for Step 1 & Step 2 (Server setup, WebSockets, and Socket event definitions).

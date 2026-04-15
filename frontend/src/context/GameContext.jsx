@@ -27,6 +27,11 @@ export function GameProvider({ children }) {
 
     newSocket.on('connect', () => {
       console.log('متصل بالخادم');
+      setSocket(newSocket);
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('خطأ في الاتصال:', error);
     });
 
     newSocket.on('room-created', (data) => {
@@ -134,14 +139,15 @@ export function GameProvider({ children }) {
       }));
     });
 
-    setSocket(newSocket);
-
     return () => newSocket.close();
   }, []);
 
   const hostGame = useCallback((role) => {
-    if (socket) {
+    if (socket && socket.connected) {
+      console.log('إرسال حدث host-game:', role);
       socket.emit('host-game', { role });
+    } else {
+      console.error('السوكت غير متصل');
     }
   }, [socket]);
 

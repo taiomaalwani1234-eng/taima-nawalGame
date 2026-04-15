@@ -7,6 +7,11 @@ export default function Lobby() {
   const [joinRoomId, setJoinRoomId] = React.useState('');
 
   const handleHost = () => {
+    if (!socket) {
+      console.error('السوكت غير متصل');
+      return;
+    }
+    console.log('محاولة استضافة لعبة بدور:', selectedRole);
     hostGame(selectedRole);
   };
 
